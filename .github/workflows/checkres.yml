@@ -1,44 +1,20 @@
-name: Manage Issue Labels
-on:
-  issues:
-    types:
-      - opened
-      - reopened
-      - edited
-      - labeled
-      - unlabeled
-
+name: Add a new GitHub Project card linked to a GitHub issue to the specified project column
+on: [issues, pull_request]
 jobs:
-  manage_labels:
+  github-actions-automate-projects:
     runs-on: ubuntu-latest
-    permissions:
-      issues: write
     steps:
-      - name: Set up GitHub CLI
-        run: |
-          if ! command -v gh &> /dev/null; then
-            sudo apt-get update
-            sudo apt-get install -y gh
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Authenticate GitHub CLI
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
-
-      - name: Add or Update Labels
-        run: |
-          # Fetch the current issue labels
-          current_labels=$(gh issue view "${{ github.event.issue.number }}" --json labels --jq '.labels[].name')
-
-          # Check if the issue already has one of the project labels
-          if echo "$current_labels" | grep -q -E "Todo|In Progress|Done"; then
-            echo "Removing existing project labels."
-            # Remove existing labels
-            gh issue edit "${{ github.event.issue.number }}" --remove-label Todo,In\ Progress,Done
-          fi
-
-          # Add the appropriate label (default to Todo if no other condition applies)
-          gh issue edit "${{ github.event.issue.number }}" --add-label "Todo"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: add-new-issues-to-repository-based-project-column
+      uses: docker://takanabe/github-actions-automate-projects:v0.0.1
+      if: github.event_name == 'issues' && github.event.action == 'opened'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_PROJECT_URL: https://github.com/users/dqwdjnqk/projects/1
+        GITHUB_PROJECT_COLUMN_NAME: To do
+    - name: add-new-prs-to-repository-based-project-column
+      uses: docker://takanabe/github-actions-automate-projects:v0.0.1
+      if: github.event_name == 'pull_request' && github.event.action == 'opened'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_PROJECT_URL: https://github.com/users/dqwdjnqk/projects/1
+        GITHUB_PROJECT_COLUMN_NAME: To do
